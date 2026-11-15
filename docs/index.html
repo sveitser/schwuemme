@@ -4,71 +4,65 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rialto Kids Pool</title>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <style>
   :root {
     --bg: #fff; --fg: #1d2330; --muted: #6b7280; --line: #e3e6ea;
-    --free: #d9f2e1; --free-fg: #17643a; --part: #fde9c8; --part-fg: #8a4b00;
-    --closed: #eef0f2; --closed-fg: #8a9099; --today: #2563eb;
+    --free: #c9ecd5; --busy: #f4b860; --busy-fg: #3d2600; --closed: #e5e7eb; --accent: #2563eb;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14171c; --fg: #e6e8eb; --muted: #9aa1ab; --line: #2a2f37;
-      --free: #173a26; --free-fg: #8fe0ad; --part: #4a3416; --part-fg: #ffcf8a;
-      --closed: #1e2228; --closed-fg: #6f7680; --today: #60a5fa;
+      --free: #1d4a30; --busy: #b9792a; --busy-fg: #fff6e8; --closed: #2a2f37; --accent: #60a5fa;
     }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg);
     font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
   h1 { font-size: 1.3rem; margin: 0 0 2px; }
-  .sub { color: var(--muted); margin: 0 0 16px; font-size: .9rem; }
-  .nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .nav h2 { flex: 1; text-align: center; font-size: 1.1rem; margin: 0; }
-  button { font: inherit; background: none; color: var(--fg); border: 1px solid var(--line);
-    border-radius: 6px; padding: 4px 12px; cursor: pointer; }
-  button:hover { border-color: var(--muted); }
-  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  .wd { text-align: center; font-size: .75rem; color: var(--muted); padding: 2px 0; }
-  .day { min-height: 64px; border-radius: 6px; padding: 4px 5px; font-size: .72rem;
-    cursor: pointer; border: 2px solid transparent; background: var(--closed); color: var(--closed-fg); }
-  .day.free { background: var(--free); color: var(--free-fg); }
-  .day.part { background: var(--part); color: var(--part-fg); }
-  .day.today { border-color: var(--today); }
-  .day.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
-  .day .n { font-weight: 600; font-size: .9rem; display: block; }
-  .day.today .n { color: var(--today); }
-  .empty { visibility: hidden; }
-  #detail { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
-  #detail h3 { margin: 0 0 6px; font-size: 1rem; }
-  #detail ul { margin: 4px 0; padding-left: 18px; }
+  .sub { color: var(--muted); margin: 0 0 10px; font-size: .9rem; }
+  .filters { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .85rem; margin: 0 0 12px; }
+  .filters label { cursor: pointer; white-space: nowrap; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: var(--muted); margin: 10px 0; }
   .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+  #detail { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+  #detail:empty { display: none; }
+  #detail h3 { margin: 0 0 6px; font-size: 1rem; }
+  #detail ul { margin: 4px 0; padding-left: 18px; }
   .links { margin-top: 18px; font-size: .9rem; }
   .links code { font-size: .8rem; word-break: break-all; }
-  a { color: var(--today); }
-  .filters { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .85rem; margin: -6px 0 12px; }
-  .filters label { cursor: pointer; white-space: nowrap; }
-  .warn { color: var(--part-fg); font-size: .85rem; }
-  @media (max-width: 480px) { .day .h { display: none; } .day { min-height: 46px; } }
+  a { color: var(--accent); }
+  .warn { color: #b45309; font-size: .85rem; }
+
+  /* FullCalendar theming */
+  #cal { --fc-border-color: var(--line); --fc-page-bg-color: var(--bg); --fc-neutral-bg-color: var(--closed);
+    --fc-today-bg-color: color-mix(in srgb, var(--accent) 8%, transparent);
+    --fc-now-indicator-color: #dc2626; --fc-button-bg-color: transparent; --fc-button-border-color: var(--line);
+    --fc-button-text-color: var(--fg); --fc-button-hover-bg-color: var(--closed); --fc-button-hover-border-color: var(--muted);
+    --fc-button-active-bg-color: var(--closed); --fc-button-active-border-color: var(--muted); }
+  .fc .fc-toolbar-title { font-size: 1.1rem; }
+  .fc .fc-button { padding: 3px 10px; font-size: .85rem; }
+  .fc .fc-button-primary:not(:disabled).fc-button-active { color: var(--fg); }
+  .fc .fc-col-header-cell.fc-day-today a { color: var(--accent); font-weight: 700; }
+  .fc .fc-timegrid-slot { height: 1.3em; }
+  .fc .free-bg { background: var(--free); opacity: .75; }
+  .fc .closed-bg { background: var(--closed); opacity: .9; }
+  .fc .busy { background: var(--busy); border-color: var(--busy); color: var(--busy-fg); cursor: pointer; font-size: .72rem; }
+  .fc .busy .fc-event-main { color: var(--busy-fg); }
+  .fc .closed-ev { background: var(--muted); border-color: var(--muted); }
+  @media (max-width: 600px) { .fc .fc-toolbar { flex-wrap: wrap; gap: 6px; } .fc .fc-toolbar-title { font-size: 1rem; } }
 </style>
 </head>
 <body>
 <main>
   <h1>Rialto kids pool</h1>
-  <p class="sub">Hallenbad Rialto opening hours, and when the kids pool is blocked by swim courses.</p>
+  <p class="sub">Hallenbad Rialto opening hours, and when the kids pool is blocked by swim courses. Click a block for details.</p>
   <div class="filters" id="filters"></div>
-
-  <div class="nav">
-    <button id="prev" aria-label="Previous month">‹</button>
-    <h2 id="title"></h2>
-    <button id="next" aria-label="Next month">›</button>
-    <button id="today">Today</button>
-  </div>
-  <div class="grid" id="grid"></div>
+  <div id="cal"></div>
   <div class="legend">
     <span><span class="sw" style="background:var(--free)"></span>Open, kids pool free</span>
-    <span><span class="sw" style="background:var(--part)"></span>Open, kids pool partly blocked</span>
+    <span><span class="sw" style="background:var(--busy)"></span>Courses (kids pool blocked)</span>
     <span><span class="sw" style="background:var(--closed)"></span>Closed</span>
   </div>
   <div id="detail"></div>
@@ -85,41 +79,35 @@
       Sources: <a href="https://www.schwimmschulebeiderbasel.ch/de/informationen/kursprogramm/">Schwimmschule beider Basel</a>,
       <a href="https://www.knechtli.com/KursortDetails/Standort/9/LocRepGuid/0fb896c5-d749-4a42-b5b9-fcee7c0cfb8c/">Schwimmschule Knechtli</a>,
       <a href="https://swimly.ch/activities?location=23ae87c3-cdd2-4ee5-a7db-797ad0b01561">swimly (Schwimmschule Delfin)</a>,
-      <a href="https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/hallenbaeder/hallenbad-rialto">bs.ch Hallenbad Rialto</a>.</p>
+      <a href="https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/hallenbaeder/hallenbad-rialto">bs.ch Hallenbad Rialto</a>.
+      Code: <a href="https://github.com/sveitser/schwuemme">github.com/sveitser/schwuemme</a>.</p>
   </div>
 </main>
 <script>
 (function () {
-  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const WD = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  const pad = n => String(n).padStart(2, "0");
-  const iso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
-  const now = new Date();
-  const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
-  let y = now.getFullYear(), m = now.getMonth(), sel = todayIso, days = {};
   const KINDS = { "parent-kid": "Parent-kid", "kids": "Kids", "adult": "Adults", "aqua": "Aqua fitness", "other": "Other" };
   let enabled = new Set(Object.keys(KINDS));
-  try { const saved = JSON.parse(localStorage.getItem("kinds")); if (Array.isArray(saved)) enabled = new Set(saved); } catch (e) {}
-  document.getElementById("filters").innerHTML = "<span>Count as blocking:</span>" + Object.entries(KINDS).map(([k, l]) =>
-    `<label><input type="checkbox" value="${k}" ${enabled.has(k) ? "checked" : ""}> ${l}</label>`).join("");
-  document.getElementById("filters").onchange = e => {
-    if (e.target.checked) enabled.add(e.target.value); else enabled.delete(e.target.value);
-    try { localStorage.setItem("kinds", JSON.stringify([...enabled])); } catch (err) {}
-    render();
-  };
+  try { const s = JSON.parse(localStorage.getItem("kinds")); if (Array.isArray(s)) enabled = new Set(s); } catch (e) {}
+  let days = {};
+
+  for (const id of ["all", "blocked"]) {
+    document.getElementById("url-" + id).textContent = document.getElementById("ics-" + id).href;
+  }
+
+  const pad = n => String(n).padStart(2, "0");
   const toMin = t => +t.slice(0, 2) * 60 + +t.slice(3);
   const toHm = n => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
+  const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
   // Merge the enabled courses of a day into blocked intervals and free windows.
   function compute(v) {
-    if (!v) return null;
     const cs = (v.courses || []).filter(c => enabled.has(c.kind))
-      .map(c => [toMin(c.from), toMin(c.to), c.what]).sort((a, b) => a[0] - b[0]);
+      .map(c => [toMin(c.from), toMin(c.to), c]).sort((a, b) => a[0] - b[0]);
     const blocked = [];
-    for (const [s, e, w] of cs) {
+    for (const [s, e, c] of cs) {
       const last = blocked[blocked.length - 1];
-      if (last && s <= last.e) { last.e = Math.max(last.e, e); last.what.push(w); }
-      else blocked.push({ s, e, what: [w] });
+      if (last && s <= last.e) { last.e = Math.max(last.e, e); last.courses.push(c); }
+      else blocked.push({ s, e, courses: [c] });
     }
     const free = [];
     if (v.open) {
@@ -128,92 +116,78 @@
       for (const b of blocked) { if (b.s > t && t < o1) free.push([t, Math.min(b.s, o1)]); t = Math.max(t, b.e); }
       if (t < o1) free.push([t, o1]);
     }
-    const inOpen = v.open ? blocked.filter(b => b.e > toMin(v.open[0]) && b.s < toMin(v.open[1])) : [];
-    return {
-      open: v.open, note: v.note, school_holiday: v.school_holiday,
-      blocked: blocked.map(b => ({ from: toHm(b.s), to: toHm(b.e), what: b.what })),
-      blockedInOpen: inOpen.length,
-      free: free.map(f => [toHm(f[0]), toHm(f[1])]),
-    };
+    return { blocked, free };
   }
 
-  for (const id of ["all", "blocked"]) {
-    const a = document.getElementById("ics-" + id);
-    document.getElementById("url-" + id).textContent = a.href;
+  function short(c) {
+    // "Schwimmschule Knechtli: Krebs (263734)" -> "Krebs"
+    return c.what.replace(/^[^:]*:\s*/, "").replace(/\s*\([^)]*\)\s*$/, "").replace(/\s+(Rialto|Sonntag|Samstag|HS\d\d|FS\d\d)\b/g, "");
   }
 
-  function status(v) {
-    if (!v || !v.open) return "closed";
-    return v.blockedInOpen ? "part" : "free";
-  }
-
-  function render() {
-    document.getElementById("title").textContent = `${MONTHS[m]} ${y}`;
-    const g = document.getElementById("grid");
-    g.innerHTML = WD.map(w => `<div class="wd">${w}</div>`).join("");
-    const offset = (new Date(y, m, 1).getDay() + 6) % 7;
-    const n = new Date(y, m + 1, 0).getDate();
-    for (let i = 0; i < offset; i++) g.insertAdjacentHTML("beforeend", '<div class="day empty"></div>');
-    for (let d = 1; d <= n; d++) {
-      const k = iso(y, m, d), v = compute(days[k]), st = status(v);
-      let h = "";
-      if (v && v.open) h = `${v.open[0]}–${v.open[1]}`;
-      if (v && v.blocked.length) h += "<br>✕ " + v.blocked.map(b => `${b.from}–${b.to}`).join(", ");
-      if (v && !v.open && v.note && v.note !== "Off season") h = v.note;
-      const cls = ["day", st, k === todayIso ? "today" : "", k === sel ? "sel" : ""].join(" ");
-      g.insertAdjacentHTML("beforeend",
-        `<div class="${cls}" data-k="${k}"><span class="n">${d}</span><span class="h">${h}</span></div>`);
-    }
-    detail();
-  }
-
-  function detail() {
-    const v = compute(days[sel]), el = document.getElementById("detail");
-    const dt = new Date(sel + "T12:00:00");
-    const head = dt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    let body;
-    if (!v || !v.open) {
-      body = `<p>Closed${v && v.note ? " (" + v.note + ")" : ""}.</p>`;
-    } else {
-      body = `<p>Pool open ${v.open[0]}–${v.open[1]}${v.note ? " (" + v.note + ")" : ""}.</p>`;
-      if (v.blocked.length) {
-        body += "<p><strong>Kids pool blocked (courses):</strong></p><ul>" + v.blocked.map(b =>
-          `<li>${b.from}–${b.to}<ul>${b.what.map(w => `<li>${w}</li>`).join("")}</ul></li>`).join("") + "</ul>";
-        body += "<p><strong>Kids pool free:</strong> " + v.free.map(f => `${f[0]}–${f[1]}`).join(", ") + "</p>";
-      } else {
-        body += "<p>Kids pool free all day.</p>";
+  function events(info, success) {
+    const out = [];
+    for (let d = new Date(info.start); d < info.end; d.setDate(d.getDate() + 1)) {
+      const k = isoDate(d), v = days[k];
+      if (!v) continue;
+      if (!v.open) {
+        if (v.note && v.note !== "Off season") out.push({ title: "Closed – " + v.note, start: k, allDay: true, classNames: ["closed-ev"] });
+        out.push({ start: k, allDay: true, display: "background", classNames: ["closed-bg"] });
+        continue;
+      }
+      if (v.note) out.push({ title: v.note + ": " + v.open.join("–"), start: k, allDay: true, classNames: ["closed-ev"] });
+      const { blocked, free } = compute(v);
+      for (const f of free) out.push({ start: `${k}T${toHm(f[0])}`, end: `${k}T${toHm(f[1])}`, display: "background", classNames: ["free-bg"] });
+      for (const b of blocked) {
+        const names = [...new Set(b.courses.map(short))];
+        out.push({
+          title: names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : ""),
+          start: `${k}T${toHm(b.s)}`, end: `${k}T${toHm(b.e)}`, classNames: ["busy"],
+          extendedProps: { date: k, courses: b.courses, open: v.open },
+        });
       }
     }
-    if (v && v.school_holiday) body += `<p class="sub">${v.school_holiday}</p>`;
-    el.innerHTML = `<h3>${head}</h3>${body}`;
+    success(out);
   }
 
-  function move(delta) {
-    m += delta;
-    if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
-    render();
+  function showDetail(p, start, end) {
+    const head = new Date(p.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const rows = p.courses.slice().sort((a, b) => a.from.localeCompare(b.from))
+      .map(c => `<li>${c.from}–${c.to} ${c.what} <span class="sub">(${KINDS[c.kind] || c.kind})</span></li>`).join("");
+    document.getElementById("detail").innerHTML =
+      `<h3>${head}, ${toHm(start.getHours() * 60 + start.getMinutes())}–${toHm(end.getHours() * 60 + end.getMinutes())}</h3>` +
+      `<p class="sub">Pool open ${p.open.join("–")}</p><ul>${rows}</ul>`;
   }
 
-  document.getElementById("prev").onclick = () => move(-1);
-  document.getElementById("next").onclick = () => move(1);
-  document.getElementById("today").onclick = () => {
-    y = now.getFullYear(); m = now.getMonth(); sel = todayIso; render();
-  };
-  document.getElementById("grid").onclick = e => {
-    const c = e.target.closest(".day[data-k]");
-    if (c) { sel = c.dataset.k; render(); }
-  };
-  document.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft") move(-1);
-    if (e.key === "ArrowRight") move(1);
+  const narrow = window.matchMedia("(max-width: 700px)").matches;
+  const cal = new FullCalendar.Calendar(document.getElementById("cal"), {
+    initialView: narrow ? "timeGrid3" : "timeGridWeek",
+    views: { timeGrid3: { type: "timeGrid", duration: { days: 3 }, buttonText: "3 days" } },
+    headerToolbar: { left: "prev,next today", center: "title", right: narrow ? "timeGrid3,dayGridMonth" : "timeGridWeek,timeGridDay,dayGridMonth" },
+    buttonText: { today: "Today", week: "Week", day: "Day", month: "Month" },
+    locale: "en-GB", firstDay: 1, height: "auto", nowIndicator: true,
+    slotMinTime: "08:00", slotMaxTime: "21:30", slotDuration: "00:15", slotLabelInterval: "01:00",
+    slotLabelFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
+    eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
+    allDayText: "", dayMaxEvents: 4,
+    events,
+    eventClick: info => { if (info.event.extendedProps.courses) showDetail(info.event.extendedProps, info.event.start, info.event.end); },
   });
+
+  const f = document.getElementById("filters");
+  f.innerHTML = "<span>Count as blocking:</span>" + Object.entries(KINDS).map(([k, l]) =>
+    `<label><input type="checkbox" value="${k}" ${enabled.has(k) ? "checked" : ""}> ${l}</label>`).join("");
+  f.onchange = e => {
+    if (e.target.checked) enabled.add(e.target.value); else enabled.delete(e.target.value);
+    try { localStorage.setItem("kinds", JSON.stringify([...enabled])); } catch (err) {}
+    cal.refetchEvents();
+  };
 
   fetch("days.json").then(r => r.json()).then(j => {
     days = j.days;
     if (j.warnings && j.warnings.length) document.getElementById("warnings").textContent = "⚠ " + j.warnings.join(" · ");
-    render();
-  }).catch(() => { render(); document.getElementById("warnings").textContent = "Could not load days.json"; });
-  render();
+    cal.render();
+    cal.refetchEvents();  // FullCalendar fetches once on creation, before the data was loaded
+  }).catch(() => { cal.render(); document.getElementById("warnings").textContent = "Could not load days.json"; });
 })();
 </script>
 </body>
