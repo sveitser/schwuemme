@@ -266,6 +266,103 @@ def scrape_swimly():
     return found
 
 
+# --- official occupancy plan (Belegungsplan) -------------------------------
+
+BS_RIALTO = ("https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/"
+             "hallenbaeder/hallenbad-rialto")
+POOLS = ["SB", "LSB1", "LSB2"]  # 25m pool, learner pool 1 (public), learner pool 2 (mostly courses)
+NOT_BOOKINGS = {"keine belegungen möglich", "res. öffentlichkeit", "geschlossen", "."}
+
+
+def scrape_belegungsplan():
+    """Parse the Rialto occupancy plan (xlsx). Bookings are coded by cell fill
+    colour with a legend of organisations below the grid."""
+    import io
+    import openpyxl
+
+    page = fetch(BS_RIALTO)
+    links = re.findall(r'https://media\.bs\.ch/original_file(?:_download)?/[0-9a-f]+/[^"\s]*belegungsplan[^"\s]*\.xlsx', page)
+    if not links:
+        raise RuntimeError("no Belegungsplan link on bs.ch")
+    url = links[0]
+    wb = openpyxl.load_workbook(io.BytesIO(fetch(url, binary=True)))
+    ws = wb.worksheets[0]
+
+    def colour(c):
+        f = c.fill
+        if f is None or f.fill_type in (None, "none"):
+            return None
+        fg = f.fgColor
+        if fg.type == "rgb":
+            return None if fg.rgb in ("FFFFFFFF", "00000000") else fg.rgb
+        if fg.type == "theme":
+            return None if fg.theme == 0 and not fg.tint else f"theme{fg.theme}{fg.tint or ''}"
+        return None
+
+    # locate header rows / legend
+    hdr = next(r for r in range(1, 15) if str(ws.cell(r, 1).value or "").strip() == "Becken")
+    first = hdr + 1
+    times = []
+    r = first
+    while re.match(r"\d\d:\d\d-\d\d:\d\d", str(ws.cell(r, 1).value or "")):
+        times.append(str(ws.cell(r, 1).value).split("-"))
+        r += 1
+    legend = {}
+    for rr in range(r, ws.max_row + 1):
+        for cc in range(1, ws.max_column):
+            col, label = colour(ws.cell(rr, cc)), ws.cell(rr, cc + 1).value
+            if col and isinstance(label, str) and label.strip():
+                legend[col] = label.strip()
+    merged = {}
+    for m in ws.merged_cells.ranges:
+        v = ws.cell(m.min_row, m.min_col).value
+        for a in range(m.min_row, m.max_row + 1):
+            for b in range(m.min_col, m.max_col + 1):
+                merged[(a, b)] = v
+    # pool columns: header row lists SB/LSB1/LSB2 per weekday, two columns each
+    cols = []  # (weekday, pool, [col indexes])
+    wd = -1
+    for c in range(2, ws.max_column + 1):
+        v = str(ws.cell(hdr, c).value or "").strip()
+        if v in POOLS:
+            if v == "SB":
+                wd += 1
+            cols.append((wd, v, [c, c + 1]))
+    slots = []
+    for wd, pool, cs in cols:
+        cur = None
+        for i, (t0, t1) in enumerate(times):
+            rr = first + i
+            label = None
+            for c in cs:
+                text = ws.cell(rr, c).value or merged.get((rr, c))
+                if isinstance(text, str) and text.strip().lower() in NOT_BOOKINGS:
+                    label = None
+                    break
+                col = colour(ws.cell(rr, c))
+                if col:
+                    label = legend.get(col, "Unbekannte Belegung")
+                    if label.strip().lower() in NOT_BOOKINGS:
+                        label = None
+                    break
+            if cur and label == cur["org"] and cur["to"] == t0:
+                cur["to"] = t1
+                continue
+            if cur:
+                slots.append(cur)
+            cur = {"weekday": wd, "pool": pool, "from": t0, "to": t1, "org": label} if label else None
+        if cur:
+            slots.append(cur)
+    title = str(ws.cell(1, 2).value or "")
+    m = re.search(r"ab (\d{1,2})\.(\d{1,2})\.(\d{4})", title)
+    valid_from = date(int(m[3]), int(m[2]), int(m[1])).isoformat() if m else None
+    plan = {"source": url, "title": title, "sheet": ws.title, "valid_from": valid_from,
+            "legend": sorted(set(legend.values())), "slots": slots}
+    (DATA / "belegungsplan.json").write_text(json.dumps(plan, indent=1, ensure_ascii=False) + "\n")
+    print(f"belegungsplan: {len(slots)} slots ({title})", file=sys.stderr)
+    return {}
+
+
 # --- school holidays --------------------------------------------------------
 
 def scrape_holidays():
@@ -284,7 +381,8 @@ def scrape_holidays():
     return sorted(out, key=lambda x: x["start"])
 
 
-PROVIDERS = {"ssbb": scrape_ssbb, "knechtli": scrape_knechtli, "swimly": scrape_swimly}
+PROVIDERS = {"belegungsplan": scrape_belegungsplan, "ssbb": scrape_ssbb, "knechtli": scrape_knechtli,
+             "swimly": scrape_swimly}
 
 
 def main(argv):

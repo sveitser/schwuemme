@@ -60,35 +60,79 @@ def weekly(start, end, weekday):
         cur += timedelta(days=7)
 
 
+# Organisations in the occupancy plan whose individual lesson dates we know.
+# Their plan slots only count on days the school actually teaches at Rialto, so
+# school holidays etc. show up as free.
+ORG_PROVIDER = {"knechtli": "knechtli", "delfin": "delfin", "svb": "beider basel"}
+
+
 def main():
     rialto = load("rialto.json")
     holidays = load("school_holidays.json", [])
     courses = load("courses.json", {"courses": []})["courses"]
     manual = load("manual_blocks.json", {"blocks": []})["blocks"]
+    plan = load("belegungsplan.json")
+    pool = rialto.get("kids_pool", "LSB2")
+    early = rialto.get("learner_pool_closes_early_min", 0)
     warnings = []
 
-    blocks = {}  # iso date -> list of (start, end, label)
-
-    def add(day, t, label, kind="other"):
-        blocks.setdefault(day.isoformat(), []).append((mins(t[0]), mins(t[1]), label, kind))
-
-    # Courses with explicit dates (Knechtli, swimly) are used as-is. For the
-    # others (Schwimmschule beider Basel) lesson dates aren't published, so infer
-    # them as weekly dates within the course period minus BS school holidays and
-    # pool closures, then check against the published number of lessons.
+    # lessons per day: iso date -> list of (start, end, provider, label)
+    lessons = {}
     for c in courses:
         if c.get("dates"):
             dates = [d(x) for x in c["dates"]]
         else:
+            # Schwimmschule beider Basel doesn't publish lesson dates: infer weekly
+            # dates minus BS school holidays and pool closures.
             dates = [x for x in weekly(d(c["start"]), d(c["end"]), c["weekday"])
                      if not in_holiday(x, holidays)
                      and not rialto["special"].get(x.isoformat(), {}).get("closed")]
             if c.get("lessons") and len(dates) != c["lessons"]:
                 warnings.append(f"{c['provider']} {c.get('code', '')}: inferred {len(dates)} lessons, "
                                 f"source says {c['lessons']} - check dates manually")
-        label = f"{c['provider']}: {c['name']}" + (f" ({c['code']})" if c.get("code") else "")
+        label = f"{c['name']}" + (f" ({c['code']})" if c.get("code") else "")
         for x in dates:
-            add(x, c["time"], label, c["kind"])
+            lessons.setdefault(x.isoformat(), []).append(
+                (mins(c["time"][0]), mins(c["time"][1]), c["provider"], label))
+
+    def provider_active(key, day):
+        return any(key in c["provider"].lower() and c["weekday"] == day.weekday()
+                   and d(c["start"]) <= day <= d(c["end"]) for c in courses)
+
+    blocks = {}  # iso date -> list of dicts
+
+    def add(day, s, e, org, what, note=""):
+        blocks.setdefault(day.isoformat(), []).append({"s": s, "e": e, "org": org, "what": what, "note": note})
+
+    first = min(d(s["start"]) for s in rialto["seasons"])
+    last = max(d(s["end"]) for s in rialto["seasons"])
+    if plan:
+        valid_from = d(plan["valid_from"]) if plan.get("valid_from") else first
+        slots = [x for x in plan["slots"] if x["pool"] == pool]
+        day = max(first, valid_from)
+        while day <= last:
+            iso = day.isoformat()
+            if opening(rialto, day)[0]:
+                for sl in (x for x in slots if x["weekday"] == day.weekday()):
+                    s, e = mins(sl["from"]), mins(sl["to"])
+                    key = next((v for k, v in ORG_PROVIDER.items() if k in sl["org"].lower()), None)
+                    if key and provider_active(key, day):
+                        todays = [l for l in lessons.get(iso, []) if key in l[2].lower()]
+                        if not todays:
+                            continue  # school not teaching today (holidays etc.)
+                        what = [f"{hhmm(a)}–{hhmm(b)} {lab}" for a, b, _, lab in sorted(todays) if a < e and b > s]
+                        add(day, s, e, sl["org"], what)
+                    elif key and in_holiday(day, holidays):
+                        continue  # these schools pause during school holidays
+                    else:
+                        note = "per occupancy plan; may not take place during school holidays" if in_holiday(day, holidays) else ""
+                        add(day, s, e, sl["org"], [], note)
+            day += timedelta(days=1)
+    else:
+        warnings.append("no occupancy plan (data/belegungsplan.json); falling back to all known courses")
+        for iso, ls in lessons.items():
+            for a, b, prov, lab in ls:
+                add(d(iso), a, b, prov, [lab])
 
     for b in manual:
         if "dates" in b:
@@ -100,44 +144,31 @@ def main():
         excl = set(b.get("exclude", []))
         for x in ds:
             if x.isoformat() not in excl:
-                add(x, b["time"], b["label"], b.get("kind", "other"))
-
-    first = min(d(s["start"]) for s in rialto["seasons"])
-    last = max(d(s["end"]) for s in rialto["seasons"])
-    for k in blocks:
-        first, last = min(first, d(k)), max(last, d(k))
+                add(x, mins(b["time"][0]), mins(b["time"][1]), b["label"], [])
 
     days = {}
     cur = first
     while cur <= last:
         iso = cur.isoformat()
         o, note = opening(rialto, cur)
-        raw = sorted(blocks.get(iso, []))
-        # merge overlapping/adjacent blocks
-        merged = []
-        for s, e, lab, kind in raw:
-            if merged and s <= merged[-1][1]:
-                merged[-1][1] = max(merged[-1][1], e)
-                merged[-1][2].append(lab)
-                merged[-1][3].add(kind)
-            else:
-                merged.append([s, e, [lab], {kind}])
+        bl = sorted(blocks.get(iso, []), key=lambda x: x["s"])
+        kp = (o[0], o[1] - early) if o else None  # kids pool closes earlier
         free = []
-        if o:
-            t = o[0]
-            for s, e, _, _ in merged:
-                if s > t and s <= o[1]:
-                    free.append((t, min(s, o[1])))
-                t = max(t, e)
-            if t < o[1]:
-                free.append((t, o[1]))
+        if kp:
+            t = kp[0]
+            for b in bl:
+                if b["s"] > t and t < kp[1]:
+                    free.append((t, min(b["s"], kp[1])))
+                t = max(t, b["e"])
+            if t < kp[1]:
+                free.append((t, kp[1]))
         days[iso] = {
             "open": [hhmm(o[0]), hhmm(o[1])] if o else None,
+            "kids_pool_open": [hhmm(kp[0]), hhmm(kp[1])] if kp else None,
             "note": note,
-            "blocked": [{"from": hhmm(s), "to": hhmm(e), "what": labs, "kinds": sorted(k)}
-                        for s, e, labs, k in merged],
-            "courses": [{"from": hhmm(s), "to": hhmm(e), "what": lab, "kind": kind} for s, e, lab, kind in raw],
-            "free": [[hhmm(s), hhmm(e)] for s, e in free],
+            "blocked": [{"from": hhmm(b["s"]), "to": hhmm(b["e"]), "org": b["org"], "what": b["what"],
+                         "note": b["note"]} for b in bl],
+            "free": [[hhmm(a), hhmm(b)] for a, b in free],
             "school_holiday": in_holiday(cur, holidays),
         }
         cur += timedelta(days=1)
@@ -146,6 +177,8 @@ def main():
     (OUT / "days.json").write_text(json.dumps({
         "pool": rialto["name"],
         "address": rialto["address"],
+        "plan": {k: plan.get(k) for k in ("source", "title", "valid_from")} if plan else None,
+        "kids_pool_closes_early_min": early,
         "warnings": warnings,
         "days": days,
     }, indent=1, ensure_ascii=False) + "\n")
@@ -222,8 +255,8 @@ def write_ics(path, name, days, rialto, mode):
         dt = lambda t: f"{ymd}T{t.replace(':', '')}00"
         if mode == "blocked":
             for b in v["blocked"]:
-                ev(f"blocked-{iso}-{b['from']}", "Rialto kids pool blocked", dt(b["from"]), dt(b["to"]),
-                   desc="\n".join(b["what"]))
+                ev(f"blocked-{iso}-{b['from']}", f"Rialto kids pool: {b['org']}", dt(b["from"]), dt(b["to"]),
+                   desc="\n".join(b["what"] + ([b["note"]] if b["note"] else [])))
             continue
         if not v["open"]:
             if v["note"] != "Off season":
@@ -231,14 +264,10 @@ def write_ics(path, name, days, rialto, mode):
                 ev(f"closed-{iso}", f"Rialto closed ({v['note']})", ymd, nxt, allday=True)
             continue
         extra = f" – {v['note']}" if v["note"] else ""
-        if not v["blocked"]:
-            ev(f"free-{iso}-{v['open'][0]}", f"Rialto open, kids pool free{extra}",
-               dt(v["open"][0]), dt(v["open"][1]))
-            continue
-        busy = "\n".join(f"Blocked {b['from']}–{b['to']}: " + "; ".join(b["what"]) for b in v["blocked"])
+        busy = "\n".join(f"Blocked {b['from']}–{b['to']}: {b['org']}" for b in v["blocked"])
         for f in v["free"]:
             ev(f"free-{iso}-{f[0]}", f"Rialto kids pool free{extra}", dt(f[0]), dt(f[1]),
-               desc=f"Pool open {v['open'][0]}–{v['open'][1]}.\n{busy}")
+               desc=f"Pool open {v['open'][0]}–{v['open'][1]}, kids pool until {v['kids_pool_open'][1]}.\n{busy}")
 
     lines.append("END:VCALENDAR")
     path.write_text("\r\n".join(lines) + "\r\n")

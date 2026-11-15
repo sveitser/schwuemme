@@ -50,19 +50,21 @@
   .fc .closed-bg { background: var(--closed); opacity: .9; }
   .fc .busy { background: var(--busy); border-color: var(--busy); color: var(--busy-fg); cursor: pointer; font-size: .72rem; }
   .fc .busy .fc-event-main { color: var(--busy-fg); }
+  .fc .maybe { opacity: .55; }
   .fc .closed-ev { background: var(--muted); border-color: var(--muted); }
   @media (max-width: 600px) { .fc .fc-toolbar { flex-wrap: wrap; gap: 6px; } .fc .fc-toolbar-title { font-size: 1rem; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Rialto kids pool</h1>
-  <p class="sub">Hallenbad Rialto opening hours, and when the kids pool is blocked by swim courses. Click a block for details.</p>
-  <div class="filters" id="filters"></div>
+  <h1>Rialto learner pool</h1>
+  <p class="sub">Hallenbad Rialto has two learner pools; courses use learner pool 2 (LSB2), which is open to the public when it isn't booked.
+    Green: open and free. Click a booking for details.</p>
   <div id="cal"></div>
   <div class="legend">
-    <span><span class="sw" style="background:var(--free)"></span>Open, kids pool free</span>
-    <span><span class="sw" style="background:var(--busy)"></span>Courses (kids pool blocked)</span>
+    <span><span class="sw" style="background:var(--free)"></span>Open, learner pool 2 free</span>
+    <span><span class="sw" style="background:var(--busy)"></span>Booked for courses</span>
+    <span><span class="sw" style="background:var(--busy);opacity:.55"></span>Booked per plan, but maybe not during school holidays</span>
     <span><span class="sw" style="background:var(--closed)"></span>Closed</span>
   </div>
   <div id="detail"></div>
@@ -71,12 +73,13 @@
   <div class="links">
     <strong>Add to your calendar</strong> (subscribe by URL in Google Calendar: Other calendars → + → From URL):
     <ul>
-      <li><a id="ics-all" href="rialto.ics">rialto.ics</a>: when the pool is open and the kids pool is free (no course of any type), plus closed days<br><code id="url-all"></code></li>
-      <li><a id="ics-blocked" href="rialto-blocked.ics">rialto-blocked.ics</a>: only the times the kids pool is blocked by courses<br><code id="url-blocked"></code></li>
+      <li><a id="ics-all" href="rialto.ics">rialto.ics</a>: when learner pool 2 is open and free, plus closed days<br><code id="url-all"></code></li>
+      <li><a id="ics-blocked" href="rialto-blocked.ics">rialto-blocked.ics</a>: only the times learner pool 2 is booked<br><code id="url-blocked"></code></li>
     </ul>
-    <p class="sub">Not every course necessarily uses the kids pool; adult and aqua fitness courses may use other pools.
-      Lesson dates of Schwimmschule beider Basel are inferred from the course period minus Basel-Stadt school holidays.
-      Sources: <a href="https://www.schwimmschulebeiderbasel.ch/de/informationen/kursprogramm/">Schwimmschule beider Basel</a>,
+    <p class="sub">Bookings come from the official <a id="plan" href="#">occupancy plan</a> (Belegungsplan) of Hallenbad Rialto.
+      For Knechtli, Delfin and Schwimmschule beider Basel their published lesson dates decide whether a booking takes place on a given day
+      (no lessons during school holidays). Learner pools are assumed to close 30 minutes before the pool.
+      Course sources: <a href="https://www.schwimmschulebeiderbasel.ch/de/informationen/kursprogramm/">Schwimmschule beider Basel</a>,
       <a href="https://www.knechtli.com/KursortDetails/Standort/9/LocRepGuid/0fb896c5-d749-4a42-b5b9-fcee7c0cfb8c/">Schwimmschule Knechtli</a>,
       <a href="https://swimly.ch/activities?location=23ae87c3-cdd2-4ee5-a7db-797ad0b01561">swimly (Schwimmschule Delfin)</a>,
       <a href="https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/hallenbaeder/hallenbad-rialto">bs.ch Hallenbad Rialto</a>.
@@ -85,9 +88,6 @@
 </main>
 <script>
 (function () {
-  const KINDS = { "parent-kid": "Parent-kid", "kids": "Kids", "adult": "Adults", "aqua": "Aqua fitness", "other": "Other" };
-  let enabled = new Set(Object.keys(KINDS));
-  try { const s = JSON.parse(localStorage.getItem("kinds")); if (Array.isArray(s)) enabled = new Set(s); } catch (e) {}
   let days = {};
 
   for (const id of ["all", "blocked"]) {
@@ -98,31 +98,6 @@
   const toMin = t => +t.slice(0, 2) * 60 + +t.slice(3);
   const toHm = n => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
   const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  // Merge the enabled courses of a day into blocked intervals and free windows.
-  function compute(v) {
-    const cs = (v.courses || []).filter(c => enabled.has(c.kind))
-      .map(c => [toMin(c.from), toMin(c.to), c]).sort((a, b) => a[0] - b[0]);
-    const blocked = [];
-    for (const [s, e, c] of cs) {
-      const last = blocked[blocked.length - 1];
-      if (last && s <= last.e) { last.e = Math.max(last.e, e); last.courses.push(c); }
-      else blocked.push({ s, e, courses: [c] });
-    }
-    const free = [];
-    if (v.open) {
-      const o0 = toMin(v.open[0]), o1 = toMin(v.open[1]);
-      let t = o0;
-      for (const b of blocked) { if (b.s > t && t < o1) free.push([t, Math.min(b.s, o1)]); t = Math.max(t, b.e); }
-      if (t < o1) free.push([t, o1]);
-    }
-    return { blocked, free };
-  }
-
-  function short(c) {
-    // "Schwimmschule Knechtli: Krebs (263734)" -> "Krebs"
-    return c.what.replace(/^[^:]*:\s*/, "").replace(/\s*\([^)]*\)\s*$/, "").replace(/\s+(Rialto|Sonntag|Samstag|HS\d\d|FS\d\d)\b/g, "");
-  }
 
   function events(info, success) {
     const out = [];
@@ -135,27 +110,26 @@
         continue;
       }
       if (v.note) out.push({ title: v.note + ": " + v.open.join("–"), start: k, allDay: true, classNames: ["closed-ev"] });
-      const { blocked, free } = compute(v);
-      for (const f of free) out.push({ start: `${k}T${toHm(f[0])}`, end: `${k}T${toHm(f[1])}`, display: "background", classNames: ["free-bg"] });
-      for (const b of blocked) {
-        const names = [...new Set(b.courses.map(short))];
+      for (const f of v.free) out.push({ start: `${k}T${f[0]}`, end: `${k}T${f[1]}`, display: "background", classNames: ["free-bg"] });
+      for (const b of v.blocked) {
         out.push({
-          title: names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3}` : ""),
-          start: `${k}T${toHm(b.s)}`, end: `${k}T${toHm(b.e)}`, classNames: ["busy"],
-          extendedProps: { date: k, courses: b.courses, open: v.open },
+          title: b.org + (b.note ? " (?)" : ""),
+          start: `${k}T${b.from}`, end: `${k}T${b.to}`, classNames: b.note ? ["busy", "maybe"] : ["busy"],
+          extendedProps: { date: k, b, v },
         });
       }
     }
     success(out);
   }
 
-  function showDetail(p, start, end) {
-    const head = new Date(p.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-    const rows = p.courses.slice().sort((a, b) => a.from.localeCompare(b.from))
-      .map(c => `<li>${c.from}–${c.to} ${c.what} <span class="sub">(${KINDS[c.kind] || c.kind})</span></li>`).join("");
+  function showDetail({ date, b, v }) {
+    const head = new Date(date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const rows = b.what.length ? `<p>Courses:</p><ul>${b.what.map(w => `<li>${w}</li>`).join("")}</ul>`
+      : `<p class="sub">No course details available for this organisation.</p>`;
     document.getElementById("detail").innerHTML =
-      `<h3>${head}, ${toHm(start.getHours() * 60 + start.getMinutes())}–${toHm(end.getHours() * 60 + end.getMinutes())}</h3>` +
-      `<p class="sub">Pool open ${p.open.join("–")}</p><ul>${rows}</ul>`;
+      `<h3>${head}, ${b.from}–${b.to}: ${b.org}</h3>${rows}` + (b.note ? `<p class="sub">${b.note}</p>` : "") +
+      `<p class="sub">Pool open ${v.open.join("–")}, learner pools until ${v.kids_pool_open[1]}.` +
+      (v.school_holiday ? ` ${v.school_holiday}.` : "") + `</p>`;
   }
 
   const narrow = window.matchMedia("(max-width: 700px)").matches;
@@ -170,20 +144,12 @@
     eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
     allDayText: "", dayMaxEvents: 4,
     events,
-    eventClick: info => { if (info.event.extendedProps.courses) showDetail(info.event.extendedProps, info.event.start, info.event.end); },
+    eventClick: info => { if (info.event.extendedProps.b) showDetail(info.event.extendedProps); },
   });
-
-  const f = document.getElementById("filters");
-  f.innerHTML = "<span>Count as blocking:</span>" + Object.entries(KINDS).map(([k, l]) =>
-    `<label><input type="checkbox" value="${k}" ${enabled.has(k) ? "checked" : ""}> ${l}</label>`).join("");
-  f.onchange = e => {
-    if (e.target.checked) enabled.add(e.target.value); else enabled.delete(e.target.value);
-    try { localStorage.setItem("kinds", JSON.stringify([...enabled])); } catch (err) {}
-    cal.refetchEvents();
-  };
 
   fetch("days.json").then(r => r.json()).then(j => {
     days = j.days;
+    if (j.plan) { const a = document.getElementById("plan"); a.href = j.plan.source; a.title = j.plan.title; }
     if (j.warnings && j.warnings.length) document.getElementById("warnings").textContent = "⚠ " + j.warnings.join(" · ");
     cal.render();
     cal.refetchEvents();  // FullCalendar fetches once on creation, before the data was loaded

@@ -1,6 +1,9 @@
 {
   "name": "Hallenbad Rialto",
   "address": "Birsigstrasse 45, 4054 Basel",
+  "kids_pool": "LSB2",
+  "kids_pool_note": "Learner pool 2 (Lernschwimmbecken 2) is the one booked by courses according to the occupancy plan; when free it is open to the public.",
+  "learner_pool_closes_early_min": 30,
   "source": "https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/hallenbaeder/hallenbad-rialto",
   "seasons": [
     {

@@ -1,0 +1,298 @@
+{
+ "source": "https://media.bs.ch/original_file_download/263be345c11276729fe3954c193c40592bc0ef2f/2026-ab-august-belegungsplan-rialto.xlsx",
+ "title": "Hallenbad Rialto Belegungsplan ab 31.8.2026",
+ "sheet": "26.9. - 28.4.",
+ "valid_from": "2026-08-31",
+ "legend": [
+  "Anfänger Erw.Knechtli",
+  "Aqua-Gym Knechtli",
+  "Aquafit Knechtli",
+  "Aquamaris",
+  "ElKi Knechtli",
+  "Erwachsene Knechtli",
+  "FloatFit",
+  "Kinder Knechtli",
+  "Poseidon Schwimmakademie",
+  "SK Sandra Porfirio",
+  "SLRG",
+  "SVB Schwimmschuhle",
+  "Schwimmschule Delfin GmbH",
+  "Uni Sport",
+  "keine Belegungen möglich"
+ ],
+ "slots": [
+  {
+   "weekday": 0,
+   "pool": "SB",
+   "from": "16:45",
+   "to": "20:00",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 0,
+   "pool": "SB",
+   "from": "20:00",
+   "to": "21:15",
+   "org": "Unbekannte Belegung"
+  },
+  {
+   "weekday": 0,
+   "pool": "SB",
+   "from": "21:15",
+   "to": "22:00",
+   "org": "SLRG"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB1",
+   "from": "16:45",
+   "to": "19:00",
+   "org": "Unbekannte Belegung"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB1",
+   "from": "19:00",
+   "to": "21:15",
+   "org": "Aqua-Gym Knechtli"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB2",
+   "from": "09:00",
+   "to": "11:00",
+   "org": "SVB Schwimmschuhle"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB2",
+   "from": "11:15",
+   "to": "14:45",
+   "org": "FloatFit"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB2",
+   "from": "15:00",
+   "to": "16:00",
+   "org": "SK Sandra Porfirio"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB2",
+   "from": "16:45",
+   "to": "19:00",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 0,
+   "pool": "LSB2",
+   "from": "19:00",
+   "to": "21:15",
+   "org": "Aquafit Knechtli"
+  },
+  {
+   "weekday": 1,
+   "pool": "LSB2",
+   "from": "09:15",
+   "to": "10:00",
+   "org": "Aqua-Gym Knechtli"
+  },
+  {
+   "weekday": 1,
+   "pool": "LSB2",
+   "from": "10:00",
+   "to": "12:30",
+   "org": "ElKi Knechtli"
+  },
+  {
+   "weekday": 1,
+   "pool": "LSB2",
+   "from": "13:30",
+   "to": "16:15",
+   "org": "Anfänger Erw.Knechtli"
+  },
+  {
+   "weekday": 1,
+   "pool": "LSB2",
+   "from": "16:30",
+   "to": "18:15",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 1,
+   "pool": "LSB2",
+   "from": "18:15",
+   "to": "21:00",
+   "org": "Anfänger Erw.Knechtli"
+  },
+  {
+   "weekday": 2,
+   "pool": "LSB2",
+   "from": "08:15",
+   "to": "09:15",
+   "org": "Aquamaris"
+  },
+  {
+   "weekday": 2,
+   "pool": "LSB2",
+   "from": "09:30",
+   "to": "10:00",
+   "org": "Aqua-Gym Knechtli"
+  },
+  {
+   "weekday": 2,
+   "pool": "LSB2",
+   "from": "10:00",
+   "to": "12:30",
+   "org": "ElKi Knechtli"
+  },
+  {
+   "weekday": 2,
+   "pool": "LSB2",
+   "from": "12:45",
+   "to": "13:45",
+   "org": "Uni Sport"
+  },
+  {
+   "weekday": 2,
+   "pool": "LSB2",
+   "from": "14:30",
+   "to": "17:30",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 2,
+   "pool": "LSB2",
+   "from": "17:30",
+   "to": "21:00",
+   "org": "Unbekannte Belegung"
+  },
+  {
+   "weekday": 3,
+   "pool": "LSB2",
+   "from": "09:15",
+   "to": "10:15",
+   "org": "ElKi Knechtli"
+  },
+  {
+   "weekday": 3,
+   "pool": "LSB2",
+   "from": "10:15",
+   "to": "11:30",
+   "org": "Unbekannte Belegung"
+  },
+  {
+   "weekday": 3,
+   "pool": "LSB2",
+   "from": "11:45",
+   "to": "12:45",
+   "org": "Poseidon Schwimmakademie"
+  },
+  {
+   "weekday": 3,
+   "pool": "LSB2",
+   "from": "13:00",
+   "to": "16:15",
+   "org": "Aquamaris"
+  },
+  {
+   "weekday": 3,
+   "pool": "LSB2",
+   "from": "16:30",
+   "to": "18:00",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 3,
+   "pool": "LSB2",
+   "from": "18:00",
+   "to": "21:00",
+   "org": "Aquafit Knechtli"
+  },
+  {
+   "weekday": 4,
+   "pool": "LSB2",
+   "from": "09:15",
+   "to": "10:15",
+   "org": "ElKi Knechtli"
+  },
+  {
+   "weekday": 4,
+   "pool": "LSB2",
+   "from": "10:15",
+   "to": "13:30",
+   "org": "Unbekannte Belegung"
+  },
+  {
+   "weekday": 4,
+   "pool": "LSB2",
+   "from": "13:30",
+   "to": "14:30",
+   "org": "FloatFit"
+  },
+  {
+   "weekday": 4,
+   "pool": "LSB2",
+   "from": "14:30",
+   "to": "18:00",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 4,
+   "pool": "LSB2",
+   "from": "18:00",
+   "to": "20:45",
+   "org": "Aquafit Knechtli"
+  },
+  {
+   "weekday": 5,
+   "pool": "LSB2",
+   "from": "09:15",
+   "to": "12:15",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 5,
+   "pool": "LSB2",
+   "from": "12:15",
+   "to": "13:45",
+   "org": "Aquamaris"
+  },
+  {
+   "weekday": 5,
+   "pool": "LSB2",
+   "from": "14:00",
+   "to": "16:30",
+   "org": "Schwimmschule Delfin GmbH"
+  },
+  {
+   "weekday": 5,
+   "pool": "LSB2",
+   "from": "16:45",
+   "to": "17:45",
+   "org": "Aquamaris"
+  },
+  {
+   "weekday": 6,
+   "pool": "LSB2",
+   "from": "09:15",
+   "to": "12:15",
+   "org": "Kinder Knechtli"
+  },
+  {
+   "weekday": 6,
+   "pool": "LSB2",
+   "from": "12:15",
+   "to": "13:45",
+   "org": "Aquamaris"
+  },
+  {
+   "weekday": 6,
+   "pool": "LSB2",
+   "from": "14:00",
+   "to": "17:00",
+   "org": "Schwimmschule Delfin GmbH"
+  }
+ ]
+}
