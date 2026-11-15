@@ -1,0 +1,4 @@
+{
+  "_comment": "Other groups using the kids pool. Each block repeats weekly on 'weekday' between 'start' and 'end' (inclusive), skipping BS school holidays if 'skip_school_holidays' is true. Use 'dates' instead of weekday/start/end for one-off dates. Example: {\"label\": \"Schulschwimmen\", \"weekday\": \"tue\", \"time\": [\"08:00\", \"10:00\"], \"start\": \"2026-09-01\", \"end\": \"2027-06-30\", \"skip_school_holidays\": true, \"exclude\": [\"2027-01-05\"]}",
+  "blocks": []
+}

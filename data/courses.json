@@ -1,0 +1,72 @@
+{
+  "courses": [
+    {
+      "code": "1RIB01",
+      "category": "eltern-kind-schwimmen",
+      "level": "3 - 8 Monate",
+      "pool": "Hallenbad Rialto",
+      "weekday": "Montag",
+      "start": "2026-11-23",
+      "end": "2027-03-15",
+      "time": [
+        "09:00",
+        "09:30"
+      ],
+      "lessons": 13,
+      "teacher": "Lucato Jessica",
+      "remarks": "-",
+      "url": "https://www.schwimmschulebeiderbasel.ch/de/kurs-details/?k=349S7BRO"
+    },
+    {
+      "code": "1RIB02",
+      "category": "eltern-kind-schwimmen",
+      "level": "9 - 24 Monate",
+      "pool": "Hallenbad Rialto",
+      "weekday": "Montag",
+      "start": "2026-11-23",
+      "end": "2027-03-15",
+      "time": [
+        "09:30",
+        "10:00"
+      ],
+      "lessons": 13,
+      "teacher": "Lucato Jessica",
+      "remarks": "-",
+      "url": "https://www.schwimmschulebeiderbasel.ch/de/kurs-details/?k=23B9133V"
+    },
+    {
+      "code": "1RIB03",
+      "category": "eltern-kind-schwimmen",
+      "level": "2 - 3 Jahre",
+      "pool": "Hallenbad Rialto",
+      "weekday": "Montag",
+      "start": "2026-11-23",
+      "end": "2027-03-15",
+      "time": [
+        "10:00",
+        "10:30"
+      ],
+      "lessons": 13,
+      "teacher": "Lucato Jessica",
+      "remarks": "-",
+      "url": "https://www.schwimmschulebeiderbasel.ch/de/kurs-details/?k=UZ9J1923"
+    },
+    {
+      "code": "1RIB04",
+      "category": "eltern-kind-schwimmen",
+      "level": "3 - 4 Jahre",
+      "pool": "Hallenbad Rialto",
+      "weekday": "Montag",
+      "start": "2026-11-23",
+      "end": "2027-03-15",
+      "time": [
+        "10:30",
+        "11:00"
+      ],
+      "lessons": 13,
+      "teacher": "Lucato Jessica",
+      "remarks": "-",
+      "url": "https://www.schwimmschulebeiderbasel.ch/de/kurs-details/?k=36B6HPAE"
+    }
+  ]
+}

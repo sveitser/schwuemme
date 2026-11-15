@@ -1,0 +1,37 @@
+{
+  "name": "Hallenbad Rialto",
+  "address": "Birsigstrasse 45, 4054 Basel",
+  "source": "https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/hallenbaeder/hallenbad-rialto",
+  "seasons": [
+    {
+      "start": "2026-08-31",
+      "end": "2027-07-04",
+      "hours": {
+        "mon": ["08:00", "16:30"],
+        "tue": ["08:00", "21:30"],
+        "wed": ["08:00", "21:30"],
+        "thu": ["08:00", "21:30"],
+        "fri": ["08:00", "21:30"],
+        "sat": ["09:00", "18:00"],
+        "sun": ["09:00", "18:00"]
+      }
+    }
+  ],
+  "special": {
+    "2026-12-24": { "hours": ["09:00", "16:00"], "note": "Heiligabend" },
+    "2026-12-25": { "closed": true, "note": "Weihnachten" },
+    "2026-12-26": { "hours": ["09:00", "16:00"], "note": "Stephanstag" },
+    "2026-12-31": { "hours": ["09:00", "16:00"], "note": "Silvester" },
+    "2027-01-01": { "closed": true, "note": "Neujahr" },
+    "2027-02-15": { "closed": true, "note": "Fasnachtsmontag" },
+    "2027-02-16": { "hours": ["09:00", "16:00"], "note": "Fasnachtsdienstag" },
+    "2027-02-17": { "closed": true, "note": "Fasnachtsmittwoch" },
+    "2027-03-26": { "hours": ["09:00", "16:00"], "note": "Karfreitag" },
+    "2027-03-28": { "closed": true, "note": "Ostersonntag" },
+    "2027-03-29": { "hours": ["09:00", "16:00"], "note": "Ostermontag" },
+    "2027-05-01": { "hours": ["09:00", "16:00"], "note": "Tag der Arbeit" },
+    "2027-05-06": { "hours": ["09:00", "16:00"], "note": "Auffahrt" },
+    "2027-05-17": { "closed": true, "note": "Pfingstsonntag" },
+    "2027-05-18": { "hours": ["09:00", "16:00"], "note": "Pfingstmontag" }
+  }
+}
