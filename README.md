@@ -1,5 +1,7 @@
 # Rialto kids pool calendar
 
+**Website: https://sveitser.github.io/schwuemme/** · Calendar feed: https://sveitser.github.io/schwuemme/rialto.ics
+
 When Hallenbad Rialto (Basel) is open, and when the kids pool is blocked by
 parent-kid courses of the Schwimmschule beider Basel.
 
