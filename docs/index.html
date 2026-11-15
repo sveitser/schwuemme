@@ -47,6 +47,8 @@
   .links { margin-top: 18px; font-size: .9rem; }
   .links code { font-size: .8rem; word-break: break-all; }
   a { color: var(--today); }
+  .filters { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .85rem; margin: -6px 0 12px; }
+  .filters label { cursor: pointer; white-space: nowrap; }
   .warn { color: var(--part-fg); font-size: .85rem; }
   @media (max-width: 480px) { .day .h { display: none; } .day { min-height: 46px; } }
 </style>
@@ -54,7 +56,8 @@
 <body>
 <main>
   <h1>Rialto kids pool</h1>
-  <p class="sub">Hallenbad Rialto opening hours, and when the kids pool is blocked by parent-kid courses.</p>
+  <p class="sub">Hallenbad Rialto opening hours, and when the kids pool is blocked by swim courses.</p>
+  <div class="filters" id="filters"></div>
 
   <div class="nav">
     <button id="prev" aria-label="Previous month">‹</button>
@@ -74,11 +77,14 @@
   <div class="links">
     <strong>Add to your calendar</strong> (subscribe by URL in Google Calendar: Other calendars → + → From URL):
     <ul>
-      <li><a id="ics-all" href="rialto.ics">rialto.ics</a>: when the pool is open and the kids pool is free, plus closed days<br><code id="url-all"></code></li>
-      <li><a id="ics-blocked" href="rialto-blocked.ics">rialto-blocked.ics</a>: only the times the kids pool is blocked<br><code id="url-blocked"></code></li>
+      <li><a id="ics-all" href="rialto.ics">rialto.ics</a>: when the pool is open and the kids pool is free (no course of any type), plus closed days<br><code id="url-all"></code></li>
+      <li><a id="ics-blocked" href="rialto-blocked.ics">rialto-blocked.ics</a>: only the times the kids pool is blocked by courses<br><code id="url-blocked"></code></li>
     </ul>
-    <p class="sub">Course lesson dates are inferred from the course period minus Basel-Stadt school holidays.
-      Sources: <a href="https://www.schwimmschulebeiderbasel.ch/de/kurs-angebote/eltern-kind-schwimmen">Schwimmschule beider Basel</a>,
+    <p class="sub">Not every course necessarily uses the kids pool; adult and aqua fitness courses may use other pools.
+      Lesson dates of Schwimmschule beider Basel are inferred from the course period minus Basel-Stadt school holidays.
+      Sources: <a href="https://www.schwimmschulebeiderbasel.ch/de/informationen/kursprogramm/">Schwimmschule beider Basel</a>,
+      <a href="https://www.knechtli.com/KursortDetails/Standort/9/LocRepGuid/0fb896c5-d749-4a42-b5b9-fcee7c0cfb8c/">Schwimmschule Knechtli</a>,
+      <a href="https://swimly.ch/activities?location=23ae87c3-cdd2-4ee5-a7db-797ad0b01561">swimly (Schwimmschule Delfin)</a>,
       <a href="https://www.bs.ch/themen/kultur-sport-und-freizeit/baeder-kunsteisbahnen-sportanlagen-und-raeume/hallenbaeder/hallenbad-rialto">bs.ch Hallenbad Rialto</a>.</p>
   </div>
 </main>
@@ -91,6 +97,45 @@
   const now = new Date();
   const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
   let y = now.getFullYear(), m = now.getMonth(), sel = todayIso, days = {};
+  const KINDS = { "parent-kid": "Parent-kid", "kids": "Kids", "adult": "Adults", "aqua": "Aqua fitness", "other": "Other" };
+  let enabled = new Set(Object.keys(KINDS));
+  try { const saved = JSON.parse(localStorage.getItem("kinds")); if (Array.isArray(saved)) enabled = new Set(saved); } catch (e) {}
+  document.getElementById("filters").innerHTML = "<span>Count as blocking:</span>" + Object.entries(KINDS).map(([k, l]) =>
+    `<label><input type="checkbox" value="${k}" ${enabled.has(k) ? "checked" : ""}> ${l}</label>`).join("");
+  document.getElementById("filters").onchange = e => {
+    if (e.target.checked) enabled.add(e.target.value); else enabled.delete(e.target.value);
+    try { localStorage.setItem("kinds", JSON.stringify([...enabled])); } catch (err) {}
+    render();
+  };
+  const toMin = t => +t.slice(0, 2) * 60 + +t.slice(3);
+  const toHm = n => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
+
+  // Merge the enabled courses of a day into blocked intervals and free windows.
+  function compute(v) {
+    if (!v) return null;
+    const cs = (v.courses || []).filter(c => enabled.has(c.kind))
+      .map(c => [toMin(c.from), toMin(c.to), c.what]).sort((a, b) => a[0] - b[0]);
+    const blocked = [];
+    for (const [s, e, w] of cs) {
+      const last = blocked[blocked.length - 1];
+      if (last && s <= last.e) { last.e = Math.max(last.e, e); last.what.push(w); }
+      else blocked.push({ s, e, what: [w] });
+    }
+    const free = [];
+    if (v.open) {
+      const o0 = toMin(v.open[0]), o1 = toMin(v.open[1]);
+      let t = o0;
+      for (const b of blocked) { if (b.s > t && t < o1) free.push([t, Math.min(b.s, o1)]); t = Math.max(t, b.e); }
+      if (t < o1) free.push([t, o1]);
+    }
+    const inOpen = v.open ? blocked.filter(b => b.e > toMin(v.open[0]) && b.s < toMin(v.open[1])) : [];
+    return {
+      open: v.open, note: v.note, school_holiday: v.school_holiday,
+      blocked: blocked.map(b => ({ from: toHm(b.s), to: toHm(b.e), what: b.what })),
+      blockedInOpen: inOpen.length,
+      free: free.map(f => [toHm(f[0]), toHm(f[1])]),
+    };
+  }
 
   for (const id of ["all", "blocked"]) {
     const a = document.getElementById("ics-" + id);
@@ -99,7 +144,7 @@
 
   function status(v) {
     if (!v || !v.open) return "closed";
-    return v.blocked.length ? "part" : "free";
+    return v.blockedInOpen ? "part" : "free";
   }
 
   function render() {
@@ -110,7 +155,7 @@
     const n = new Date(y, m + 1, 0).getDate();
     for (let i = 0; i < offset; i++) g.insertAdjacentHTML("beforeend", '<div class="day empty"></div>');
     for (let d = 1; d <= n; d++) {
-      const k = iso(y, m, d), v = days[k], st = status(v);
+      const k = iso(y, m, d), v = compute(days[k]), st = status(v);
       let h = "";
       if (v && v.open) h = `${v.open[0]}–${v.open[1]}`;
       if (v && v.blocked.length) h += "<br>✕ " + v.blocked.map(b => `${b.from}–${b.to}`).join(", ");
@@ -123,7 +168,7 @@
   }
 
   function detail() {
-    const v = days[sel], el = document.getElementById("detail");
+    const v = compute(days[sel]), el = document.getElementById("detail");
     const dt = new Date(sel + "T12:00:00");
     const head = dt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     let body;
@@ -132,8 +177,8 @@
     } else {
       body = `<p>Pool open ${v.open[0]}–${v.open[1]}${v.note ? " (" + v.note + ")" : ""}.</p>`;
       if (v.blocked.length) {
-        body += "<p><strong>Kids pool blocked:</strong></p><ul>" + v.blocked.map(b =>
-          `<li>${b.from}–${b.to}: ${b.what.join("; ")}</li>`).join("") + "</ul>";
+        body += "<p><strong>Kids pool blocked (courses):</strong></p><ul>" + v.blocked.map(b =>
+          `<li>${b.from}–${b.to}<ul>${b.what.map(w => `<li>${w}</li>`).join("")}</ul></li>`).join("") + "</ul>";
         body += "<p><strong>Kids pool free:</strong> " + v.free.map(f => `${f[0]}–${f[1]}`).join(", ") + "</p>";
       } else {
         body += "<p>Kids pool free all day.</p>";

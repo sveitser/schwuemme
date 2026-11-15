@@ -14,8 +14,6 @@ DATA = ROOT / "data"
 OUT = ROOT / "docs"
 
 WD_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-WD_DE = {"montag": 0, "dienstag": 1, "mittwoch": 2, "donnerstag": 3, "freitag": 4, "samstag": 5, "sonntag": 6}
-CAT_LABEL = {"eltern-kind-schwimmen": "Parent-kid course"}
 
 
 def d(s):
@@ -71,25 +69,26 @@ def main():
 
     blocks = {}  # iso date -> list of (start, end, label)
 
-    def add(day, t, label):
-        blocks.setdefault(day.isoformat(), []).append((mins(t[0]), mins(t[1]), label))
+    def add(day, t, label, kind="other"):
+        blocks.setdefault(day.isoformat(), []).append((mins(t[0]), mins(t[1]), label, kind))
 
-    # Courses: lesson dates aren't published, so infer them as weekly dates
-    # within the course period minus BS school holidays and pool closures,
-    # then check against the published number of lessons.
+    # Courses with explicit dates (Knechtli, swimly) are used as-is. For the
+    # others (Schwimmschule beider Basel) lesson dates aren't published, so infer
+    # them as weekly dates within the course period minus BS school holidays and
+    # pool closures, then check against the published number of lessons.
     for c in courses:
-        wd = WD_DE.get(c["weekday"].lower())
-        if wd is None:
-            warnings.append(f"{c['code']}: unknown weekday {c['weekday']}")
-            continue
-        dates = [x for x in weekly(d(c["start"]), d(c["end"]), wd)
-                 if not in_holiday(x, holidays) and opening(rialto, x)[0]]
-        if c.get("lessons") and len(dates) != c["lessons"]:
-            warnings.append(f"{c['code']}: inferred {len(dates)} lessons, website says {c['lessons']} "
-                            f"- check dates manually")
-        label = f"{CAT_LABEL.get(c['category'], c['category'])} {c['code']} ({c['level']})"
+        if c.get("dates"):
+            dates = [d(x) for x in c["dates"]]
+        else:
+            dates = [x for x in weekly(d(c["start"]), d(c["end"]), c["weekday"])
+                     if not in_holiday(x, holidays)
+                     and not rialto["special"].get(x.isoformat(), {}).get("closed")]
+            if c.get("lessons") and len(dates) != c["lessons"]:
+                warnings.append(f"{c['provider']} {c.get('code', '')}: inferred {len(dates)} lessons, "
+                                f"source says {c['lessons']} - check dates manually")
+        label = f"{c['provider']}: {c['name']}" + (f" ({c['code']})" if c.get("code") else "")
         for x in dates:
-            add(x, c["time"], label)
+            add(x, c["time"], label, c["kind"])
 
     for b in manual:
         if "dates" in b:
@@ -101,7 +100,7 @@ def main():
         excl = set(b.get("exclude", []))
         for x in ds:
             if x.isoformat() not in excl:
-                add(x, b["time"], b["label"])
+                add(x, b["time"], b["label"], b.get("kind", "other"))
 
     first = min(d(s["start"]) for s in rialto["seasons"])
     last = max(d(s["end"]) for s in rialto["seasons"])
@@ -116,16 +115,17 @@ def main():
         raw = sorted(blocks.get(iso, []))
         # merge overlapping/adjacent blocks
         merged = []
-        for s, e, lab in raw:
+        for s, e, lab, kind in raw:
             if merged and s <= merged[-1][1]:
                 merged[-1][1] = max(merged[-1][1], e)
                 merged[-1][2].append(lab)
+                merged[-1][3].add(kind)
             else:
-                merged.append([s, e, [lab]])
+                merged.append([s, e, [lab], {kind}])
         free = []
         if o:
             t = o[0]
-            for s, e, _ in merged:
+            for s, e, _, _ in merged:
                 if s > t and s <= o[1]:
                     free.append((t, min(s, o[1])))
                 t = max(t, e)
@@ -134,7 +134,9 @@ def main():
         days[iso] = {
             "open": [hhmm(o[0]), hhmm(o[1])] if o else None,
             "note": note,
-            "blocked": [{"from": hhmm(s), "to": hhmm(e), "what": labs} for s, e, labs in merged],
+            "blocked": [{"from": hhmm(s), "to": hhmm(e), "what": labs, "kinds": sorted(k)}
+                        for s, e, labs, k in merged],
+            "courses": [{"from": hhmm(s), "to": hhmm(e), "what": lab, "kind": kind} for s, e, lab, kind in raw],
             "free": [[hhmm(s), hhmm(e)] for s, e in free],
             "school_holiday": in_holiday(cur, holidays),
         }
